@@ -2,10 +2,20 @@
 
 import smtplib
 import ssl
+import time
+from datetime import date, datetime, timedelta
 
 from dotenv import dotenv_values
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+
+
+def parse_date(date: str):
+    try:
+        return datetime.strptime(date, "%d/%m/%Y").date()
+    except ValueError:
+        return date
 
 
 def get_contacts(driver):
@@ -26,6 +36,9 @@ def get_contacts(driver):
             # TODO: save 'message'?
             # contacts[data[0]] = {'date': data[1], 'message': data[2]}
 
+    cutoff = False
+    cutoff_date = date.today() - timedelta(weeks=3)
+    while not cutoff:
         # We scroll bit-by-bit until the cutoff date, or until we reach the end of the list
         end_of_scroll = driver.execute_script("""
             const sidepanel = arguments[0];
@@ -42,6 +55,11 @@ def get_contacts(driver):
         new_rows = side_panel.find_elements('xpath', f".//{row_attributes}")
         for row in new_rows:
             data = row.find_elements('xpath', f".//div[@aria-colindex='2']/div")
+            parsed_date = parse_date(data[1].text)
+            if isinstance(parsed_date, date) and parsed_date < cutoff_date:
+                cutoff = True
+                break
+
             if row.find_elements('xpath', f".//span[contains(@aria-label, 'unread')]"):
                 data = row.text.split('\n')
                 if data[0] not in contacts:
