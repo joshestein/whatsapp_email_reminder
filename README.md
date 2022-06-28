@@ -16,3 +16,5 @@ PASSWORD:'<16_string_password_from_step_2>'
 4. Run: `python whatsapp_reminder.py`
 
 The first time you run the script, you will need to scan the QR code via your phone. After that, it should be automatic.
+
+5. Run `./cronjob` to add a new cron task to run daily at 2pm.
