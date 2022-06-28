@@ -44,7 +44,8 @@ def get_contacts(driver):
             data = row.find_elements('xpath', f".//div[@aria-colindex='2']/div")
             if row.find_elements('xpath', f".//span[contains(@aria-label, 'unread')]"):
                 data = row.text.split('\n')
-                contacts[data[0]] = {'date': data[1], 'message': data[2]}
+                if data[0] not in contacts:
+                    contacts[data[0]] = {'date': data[1]}
 
     return contacts
 
