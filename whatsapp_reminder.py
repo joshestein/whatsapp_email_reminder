@@ -31,7 +31,7 @@ def get_contacts(driver):
 
     contacts = {}
     for row in rows:
-        if row.find_elements('xpath', f".//span[contains(@aria-label, 'unread')]"):
+        if row.find_elements('xpath', ".//span[contains(@aria-label, 'unread')]"):
             data = row.text.split('\n')
             contacts[data[0]] = {'date': data[1]}
             # TODO: save 'message'?
@@ -57,13 +57,13 @@ def get_contacts(driver):
 
         new_rows = side_panel.find_elements('xpath', f".//{row_attributes}")
         for row in new_rows:
-            data = row.find_elements('xpath', f".//div[@aria-colindex='2']/div")
+            data = row.find_elements('xpath', ".//div[@aria-colindex='2']/div")
             parsed_date = parse_date(data[1].text)
             if isinstance(parsed_date, date) and parsed_date < cutoff_date:
                 cutoff = True
                 break
 
-            if row.find_elements('xpath', f".//span[contains(@aria-label, 'unread')]"):
+            if row.find_elements('xpath', ".//span[contains(@aria-label, 'unread')]"):
                 data = row.text.split('\n')
                 if data[0] not in contacts:
                     contacts[data[0]] = {'date': data[1]}
