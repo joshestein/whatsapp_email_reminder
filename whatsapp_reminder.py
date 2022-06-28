@@ -4,6 +4,7 @@ import smtplib
 import ssl
 import time
 from datetime import date, datetime, timedelta
+from email.message import EmailMessage
 
 from dotenv import dotenv_values
 from selenium import webdriver
@@ -73,11 +74,29 @@ def email_reminders(contacts):
     email = config['EMAIL']
     password = config['PASSWORD']
 
-    subject = "Reminder to reply to your WhatsApp contacts"
-    body = f"Subject: {subject}\n\n"
-    body += "You should reply to the following:\n\n"
+    message = EmailMessage()
+    message["Subject"] = "Reminder to reply to your WhatsApp contacts"
+    message["From"] = email
+    message["To"] = email
+
+    body = HTML_head()
+    body += """
+            You should reply to the following:<br><br>
+            <table>
+                <tr>
+                <th>Name</th>
+                <th>Last messaged</th>
+                </tr>
+    """
+
     for name, data in contacts.items():
-        body += f"{name} - {data['date']}\n"
+        body += f'<tr><td>{name}</td><td>{data["date"]}</td></tr>'
+    body += "</table>"
+    body += HTML_tail()
+
+    print(body)
+
+    message.set_content(body, subtype='html')
 
     # Create a secure SSL context
     context = ssl.create_default_context()
@@ -85,7 +104,41 @@ def email_reminders(contacts):
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
         server.ehlo()
         server.login(email, password)
-        server.sendmail(email, email, body)
+        server.send_message(message)
+
+
+def HTML_head():
+    return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Your contacts</title>
+            <style>
+                table {
+                    border: solid 1px lightgray;
+                    border-collapse: collapse;
+                    border-spacing: 0;
+                    font: normal 14px Roboto, sans-serif;
+                }
+
+                th, td {
+                    border: solid 1px lightgray;
+                    padding: 10px;
+                }
+            </style>
+        </head>
+        <body>
+    """
+
+
+def HTML_tail():
+    return """
+        </body>
+    </html>
+    """
 
 
 if __name__ == "__main__":
