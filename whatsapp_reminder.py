@@ -38,6 +38,8 @@ def get_contacts(driver):
             # contacts[data[0]] = {'date': data[1], 'message': data[2]}
 
     cutoff = False
+
+    # TODO: make configurable
     cutoff_date = date.today() - timedelta(weeks=3)
     while not cutoff:
         # We scroll bit-by-bit until the cutoff date, or until we reach the end of the list
@@ -93,8 +95,6 @@ def email_reminders(contacts):
         body += f'<tr><td>{name}</td><td>{data["date"]}</td></tr>'
     body += "</table>"
     body += HTML_tail()
-
-    print(body)
 
     message.set_content(body, subtype='html')
 
