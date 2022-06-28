@@ -14,15 +14,37 @@ def get_contacts(driver):
     # Wait until the page is loaded, by checking for search box
     WebDriverWait(driver, 50).until(lambda d: d.find_element("xpath", "//div[contains(., 'Search or start new chat')]"))
 
-    unread = driver.find_elements(
-        "xpath", "//span[contains(@aria-label, 'unread')]/ancestor::div[@role='row' and @tabindex='-1' and @aria-selected='false']")
+    row_attributes = "div[@role='row' and @tabindex='-1' and @aria-selected='false']"
+    side_panel = driver.find_element(By.ID, 'pane-side')
+    rows = side_panel.find_elements('xpath', f".//{row_attributes}")
 
-    # TODO: scroll down to fetch more chats
-    contacts = []
-    for chat in unread:
-        contact = chat.find_element("xpath", ".//div[@aria-colindex='2']")
-        name, date = contact.text.split("\n")
-        contacts.append((name, date))
+    contacts = {}
+    for row in rows:
+        if row.find_elements('xpath', f".//span[contains(@aria-label, 'unread')]"):
+            data = row.text.split('\n')
+            contacts[data[0]] = {'date': data[1]}
+            # TODO: save 'message'?
+            # contacts[data[0]] = {'date': data[1], 'message': data[2]}
+
+        # We scroll bit-by-bit until the cutoff date, or until we reach the end of the list
+        end_of_scroll = driver.execute_script("""
+            const sidepanel = arguments[0];
+            sidepanel.scrollTop += sidepanel.offsetHeight;
+            return sidepanel.scrollTop === sidepanel.scrollTopMax;
+        """, side_panel)
+
+        if end_of_scroll:
+            break
+
+        # Wait for scroll to finish
+        time.sleep(0.5)
+
+        new_rows = side_panel.find_elements('xpath', f".//{row_attributes}")
+        for row in new_rows:
+            data = row.find_elements('xpath', f".//div[@aria-colindex='2']/div")
+            if row.find_elements('xpath', f".//span[contains(@aria-label, 'unread')]"):
+                data = row.text.split('\n')
+                contacts[data[0]] = {'date': data[1], 'message': data[2]}
 
     return contacts
 
@@ -31,19 +53,17 @@ def email_reminders(contacts):
     config = dotenv_values()
     email = config['EMAIL']
     password = config['PASSWORD']
-    port = 465  # For SSL
 
     subject = "Reminder to reply to your WhatsApp contacts"
     body = f"Subject: {subject}\n\n"
     body += "You should reply to the following:\n\n"
-    for contact in contacts:
-        name, date = contact[0], contact[1]
-        body += f"{name} - {date}\n"
+    for name, data in contacts.items():
+        body += f"{name} - {data['date']}\n"
 
     # Create a secure SSL context
     context = ssl.create_default_context()
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
         server.ehlo()
         server.login(email, password)
         server.sendmail(email, email, body)
