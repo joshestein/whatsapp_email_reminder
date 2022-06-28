@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+crontab -l > crontab.bak
+echo "0 14 * * * $(pwd)" >> crontab.bak
+crontab crontab.bak
+rm crontab.bak
