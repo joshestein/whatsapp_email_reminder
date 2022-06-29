@@ -143,7 +143,8 @@ def HTML_tail():
 
 if __name__ == "__main__":
     options = webdriver.ChromeOptions()
-    options.add_argument(f"--user-data-dir=chrome-data")
+    options.add_argument("--user-data-dir=chrome-data")
+    options.add_argument("--headless")
     driver = webdriver.Chrome(options=options)
 
     contacts = get_contacts(driver)
