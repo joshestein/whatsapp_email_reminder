@@ -24,24 +24,28 @@ def get_contacts(driver):
 
     # Wait until the page is loaded, by checking for search box
     WebDriverWait(driver, 50).until(lambda d: d.find_element("xpath", "//div[contains(., 'Search or start new chat')]"))
-
-    row_attributes = "div[@role='row' and @tabindex='-1' and @aria-selected='false']"
     side_panel = driver.find_element(By.ID, 'pane-side')
-    rows = side_panel.find_elements('xpath', f".//{row_attributes}")
 
     contacts = {}
-    for row in rows:
-        if row.find_elements('xpath', ".//span[contains(@aria-label, 'unread')]"):
-            data = row.text.split('\n')
-            contacts[data[0]] = {'date': data[1]}
-            # TODO: save 'message'?
-            # contacts[data[0]] = {'date': data[1], 'message': data[2]}
-
     cutoff = False
 
     # TODO: make configurable
     cutoff_date = date.today() - timedelta(weeks=3)
     while not cutoff:
+        rows = side_panel.find_elements('xpath', ".//div[@role='row' and @tabindex='-1' and @aria-selected='false']")
+        for row in rows:
+            data = row.find_elements('xpath', ".//div[@aria-colindex='2']/div")
+            parsed_date = parse_date(data[1].text)
+            if isinstance(parsed_date, date) and parsed_date < cutoff_date:
+                cutoff = True
+                break
+
+            if row.find_elements('xpath', ".//span[contains(@aria-label, 'unread')]"):
+                data = row.text.split('\n')
+                if data[0] not in contacts:
+                    # TODO: save 'message'?
+                    contacts[data[0]] = {'date': data[1]}
+
         # We scroll bit-by-bit until the cutoff date, or until we reach the end of the list
         end_of_scroll = driver.execute_script("""
             const sidepanel = arguments[0];
@@ -54,19 +58,6 @@ def get_contacts(driver):
 
         # Wait for scroll to finish
         time.sleep(0.5)
-
-        new_rows = side_panel.find_elements('xpath', f".//{row_attributes}")
-        for row in new_rows:
-            data = row.find_elements('xpath', ".//div[@aria-colindex='2']/div")
-            parsed_date = parse_date(data[1].text)
-            if isinstance(parsed_date, date) and parsed_date < cutoff_date:
-                cutoff = True
-                break
-
-            if row.find_elements('xpath', ".//span[contains(@aria-label, 'unread')]"):
-                data = row.text.split('\n')
-                if data[0] not in contacts:
-                    contacts[data[0]] = {'date': data[1]}
 
     return contacts
 
